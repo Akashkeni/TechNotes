@@ -2,109 +2,134 @@
 
 ## Project Overview
 
-`TechNotes` is a small web application repository with a Node.js backend and a frontend folder. The backend is structured around Express.js and provides static file serving, a root route, and request handling with custom middleware.
+`TechNotes` is a Node.js + Express backend for a note-taking application with MongoDB persistence. The backend includes user and note management APIs, CORS support, request/error logging, static asset serving, and password hashing for user creation and updates.
 
 ## Repository Structure
 
 - `backend/`
-  - `package.json` - backend project metadata, dependencies, and scripts.
+  - `.env` - environment variables, including `DATABASE_URI` for MongoDB.
+  - `package.json` - backend dependencies and scripts.
   - `server.js` - main Express server entry point.
-  - `config/` - configuration helpers for CORS and allowed origins.
-  - `logs/` - log storage directory.
-  - `middleware/` - custom middleware functions.
-    - `logger.js` - request logging support.
-    - `errorHandler.js` - centralized error handling.
-  - `public/` - static assets served to clients.
+  - `config/` - configuration helpers.
+    - `allowedOrigns.js` - allowed CORS origins.
+    - `corsOptions.js` - CORS policy configuration.
+    - `dbConn.js` - MongoDB connection helper.
+  - `controllers/` - request handlers for routes.
+    - `notesController.js` - CRUD operations for notes.
+    - `usersControllers.js` - CRUD operations for users.
+  - `middleware/` - reusable middleware.
+    - `logger.js` - request logging and log file writing.
+    - `errorHandler.js` - centralized error handling and logging.
+  - `models/` - Mongoose data models.
+    - `Note.js` - note schema with user reference, title/text, completed status, and auto-increment ticket field.
+    - `User.js` - user schema with hashed password, roles, and active status.
+  - `public/` - static files served to clients.
     - `css/styles.css` - stylesheet.
-    - `a.txt` - example text asset.
-  - `routes/` - Express router modules.
-    - `root.js` - root route handler.
-  - `views/` - HTML views for rendering responses.
+    - `a.txt` - example static asset.
+  - `routes/` - Express route modules.
+    - `root.js` - homepage route.
+    - `userRoutes.js` - user API routes.
+    - `noteRoutes.js` - note API routes.
+  - `views/` - HTML view templates.
     - `index.html` - main homepage.
-    - `404.html` - fallback page for not-found routes.
-- `frontend/` - frontend application code (not detailed here).
+    - `404.html` - not-found fallback page.
+- `frontend/` - frontend application code (not documented here).
 
 ## Backend Details
 
-### `backend/package.json`
+### Dependencies
 
 The backend uses the following main dependencies:
 
 - `express` - web server framework.
-- `cors` - cross-origin resource sharing support.
+- `bcrypt` - password hashing.
 - `cookie-parser` - cookie parsing middleware.
+- `cors` - cross-origin resource sharing support.
 - `date-fns` - date formatting utilities.
+- `dotenv` - environment variable loading.
+- `express-async-handler` - async route wrapper.
+- `mongoose` - MongoDB object modeling.
+- `mongoose-sequence` - auto-increment plugin.
 - `uuid` - unique identifier generation.
 
 Dev dependency:
 
 - `nodemon` - restart server automatically during development.
 
-Important scripts:
+### Scripts
 
 - `npm start` - runs the backend using `node server`.
 - `npm run dev` - runs the backend with `nodemon server`.
 
 ### `backend/server.js`
 
-This file is the app entry point. It does the following:
+The backend entry point:
 
-- Creates an Express application.
-- Uses `express.json()` to parse JSON request bodies.
-- Serves static files from `backend/public` at the application root.
-- Mounts the root router from `backend/routes/root.js`.
-- Adds a final 404 handler that returns HTML, JSON, or plain text based on the client's `Accept` header.
-- Starts the server on `process.env.PORT` or port `3500`.
+- loads environment variables from `.env`.
+- connects to MongoDB using `backend/config/dbConn.js`.
+- uses custom request logging middleware from `backend/middleware/logger.js`.
+- applies CORS using `backend/config/corsOptions.js`.
+- parses JSON request bodies and cookies.
+- serves static files from `backend/public`.
+- mounts route modules for `/`, `/users`, and `/notes`.
+- returns a 404 response in HTML, JSON, or plain text when no route matches.
+- starts the server after the MongoDB connection is successfully opened.
 
-### `backend/routes/root.js`
+### API Routes
 
-This router handles the default website entry points:
+- `GET /`, `/index`, `/index.html` - serves `backend/views/index.html`.
+- `GET /users` - list all users (passwords omitted).
+- `POST /users` - create a new user with hashed password.
+- `PATCH /users` - update an existing user's username, roles, active status, and optional password.
+- `DELETE /users` - delete a user if no notes are assigned.
+- `GET /notes` - list all notes with populated user username.
+- `POST /notes` - create a note for an existing user.
+- `PATCH /notes` - update a note's text, title, completed status, and user.
+- `DELETE /notes` - delete a note by ID.
 
-- GET `/`
-- GET `/index`
-- GET `/index.html`
+### Data Models
 
-For these paths, it serves `backend/views/index.html`.
+- `User` model stores `username`, hashed `password`, `roles`, and `active`.
+- `Note` model stores a `user` reference, `title`, `text`, `completed`, timestamps, and an auto-increment `ticket` field.
+- Note titles are enforced unique per user.
 
-### `backend/middleware/logger.js`
+### Logging and Error Handling
 
-This module is designed to support logging events. It currently:
+- `backend/middleware/logger.js` writes requests to `backend/logs/reqLog.log` and prints request info to the console.
+- `backend/middleware/errorHandler.js` logs errors to `backend/logs/errLog.log` and returns JSON error responses.
 
-- Imports `date-fns` to format timestamps.
-- Imports `uuid` to generate unique IDs.
-- Prepares a log message string with date/time, UUID, and custom message.
+## Running the Backend
 
-Note: the current `logger.js` file is incomplete; it builds a log entry but does not yet write it to a log file or export the logger function.
-
-## How to Run the Backend
-
-1. Open a terminal in `backend/`
+1. Open a terminal in `backend/`.
 2. Install dependencies:
 
 ```bash
 npm install
 ```
 
-3. Start the server:
+3. Create or update `.env` with your MongoDB connection string:
+
+```env
+DATABASE_URI=<your MongoDB URI>
+```
+
+4. Start the server:
 
 ```bash
 npm start
 ```
 
-4. For development with automatic restarts:
+5. For development with automatic restarts:
 
 ```bash
 npm run dev
 ```
 
-5. Open a browser at `http://localhost:3500` if the server starts successfully.
+6. Open a browser at `http://localhost:3500` once the server is running.
 
 ## Notes
 
-- The backend currently serves its own static assets from `backend/public` and a homepage from `backend/views/index.html`.
-- The `frontend/` folder exists but is not documented here because the attached backend files are the current focus.
-- If you want to extend functionality, the next logical areas are:
-  - completing `backend/middleware/logger.js`
-  - verifying `backend/middleware/errorHandler.js`
-  - adding additional route modules under `backend/routes/`
-  - connecting a frontend implementation in `frontend/`
+- The backend connects to MongoDB via `DATABASE_URI` from `.env`.
+- The `users` and `notes` routes are designed for API usage and expect JSON bodies.
+- Static assets are served from `backend/public`, while the homepage is served from `backend/views/index.html`.
+- The `frontend/` folder exists but is not covered in this README.
