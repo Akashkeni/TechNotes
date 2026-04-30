@@ -44,6 +44,7 @@ app.use("/",require("./routes/root"))
 
 app.use("/users",require("./routes/userRoutes"))
 
+app.use("/notes",require("./routes/noteRoutes"))
 
 // 404 not Found page handler , that runs only when no requests matches the actual application url path 
 app.use((req,res)=>{

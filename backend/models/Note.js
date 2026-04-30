@@ -11,10 +11,15 @@ const noteSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
+      trim: true,
+  minlength: 3,
+  maxlength: 100,
     },
     text: {
       type: String,
       required: true,
+       trim: true,
+  minlength: 3,
     },
     completed: {
       type: Boolean,
@@ -25,6 +30,9 @@ const noteSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
+noteSchema.index({ user: 1, title: 1 }, { unique: true });
+
 
 noteSchema.plugin(Autoincrement,{
     inc_field:"ticket",
